@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Square, Loader2, Sparkles, AlertCircle, CheckCircle2, Waves } from 'lucide-react';
 import { checkRecitationStream } from '../services/geminiService';
@@ -24,8 +25,8 @@ const RecitationRoom: React.FC = () => {
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>('');
   
-  const isRecordingRef = useRef(isRecording);
-  isRecordingRef.current = isRecording;
+  // Keep track of recording state for events
+  const recordingStateRef = useRef(false);
 
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -55,47 +56,74 @@ const RecitationRoom: React.FC = () => {
       };
 
       recognition.onend = () => {
-        if (isRecordingRef.current) {
+        // If it ended unexpectedly while we thought we were recording
+        if (recordingStateRef.current) {
           setIsRecording(false);
+          recordingStateRef.current = false;
         }
       };
 
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
-        if (event.error === 'no-speech') {
-          setRecognitionError("لم يتم اكتشاف أي صوت. يرجى المحاولة مرة أخرى والتحدث بوضوح.");
-        } else if (event.error === 'audio-capture') {
-          setRecognitionError("حدث خطأ في الوصول إلى الميكروفون. يرجى التحقق من الأذونات.");
-        } else {
-          setRecognitionError("حدث خطأ غير متوقع في التعرف على الصوت.");
+        
+        const errorMessages: Record<string, string> = {
+          'network': 'حدث خطأ في الاتصال بالشبكة. يرجى التحقق من استقرار الإنترنت والمحاولة مرة أخرى.',
+          'no-speech': 'لم يتم اكتشاف أي صوت. يرجى التحدث بوضوح.',
+          'audio-capture': 'حدث خطأ في الوصول إلى الميكروفون. يرجى التحقق من الأذونات.',
+          'not-allowed': 'تم رفض الوصول للميكروفون. يرجى تفعيل الصلاحية من إعدادات المتصفح.',
+          'aborted': 'تم إيقاف التسجيل.'
+        };
+
+        if (event.error !== 'aborted') {
+          setRecognitionError(errorMessages[event.error] || "حدث خطأ غير متوقع في التعرف على الصوت.");
         }
+        
         setIsRecording(false);
+        recordingStateRef.current = false;
       };
     } else {
       setIsBrowserSupported(false);
     }
     
     return () => {
-      recognitionRef.current?.abort();
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
     };
   }, []);
   
+  // Process check when recording stops
   useEffect(() => {
-    if (!isRecording && transcribedText.trim() !== '') {
+    if (!isRecording && transcribedText.trim() !== '' && !loading) {
       handleRecitationCheck();
     }
   }, [isRecording]);
 
   const handleToggleRecording = () => {
     if (isRecording) {
-      recognitionRef.current?.stop();
+      // Immediate UI update to prevent "not stopping" feeling
+      setIsRecording(false);
+      recordingStateRef.current = false;
+      
+      try {
+        recognitionRef.current?.stop();
+      } catch (e) {
+        recognitionRef.current?.abort();
+      }
     } else {
       finalTranscriptRef.current = '';
       setTranscribedText('');
       setFeedback(null);
       setRecognitionError(null);
-      recognitionRef.current?.start();
-      setIsRecording(true);
+      
+      try {
+        recognitionRef.current?.start();
+        setIsRecording(true);
+        recordingStateRef.current = true;
+      } catch (e) {
+        console.error("Failed to start recognition:", e);
+        setRecognitionError("تعذر بدء التسجيل. يرجى تحديث الصفحة والمحاولة مجدداً.");
+      }
     }
   };
 
@@ -108,43 +136,42 @@ const RecitationRoom: React.FC = () => {
     
     try {
       const stream = await checkRecitationStream(selectedSurah, ayahNumber, textToSubmit);
-      setLoading(false);
-
+      
       let accumulatedText = "";
       setFeedback({ isCorrect: null, feedback: "", correctedText: null });
 
       for await (const chunk of stream) {
         accumulatedText += chunk.text;
-        const lines = accumulatedText.split('\n');
-        const result = lines[0].trim();
-        const feedbackText = lines.slice(1).join('\n').split("التصحيح:")[0].trim();
         
+        const lines = accumulatedText.split('\n');
+        // Initial feedback while streaming
+        const feedbackText = lines.slice(1).join('\n').split("التصحيح:")[0].trim();
         setFeedback((prev: any) => ({ ...prev, feedback: feedbackText }));
       }
       
-      // Final processing after stream is complete
+      // Final processing
       const lines = accumulatedText.split('\n');
       const result = lines[0].trim();
       const isCorrect = result === 'صحيح';
-      let feedbackText = lines.slice(1).join('\n').trim();
+      let feedbackBody = lines.slice(1).join('\n').trim();
       let correctedText = null;
 
-      const correctionIndex = feedbackText.indexOf("التصحيح:");
+      const correctionIndex = feedbackBody.indexOf("التصحيح:");
       if (correctionIndex !== -1) {
-        correctedText = feedbackText.substring(correctionIndex + "التصحيح:".length).trim();
-        feedbackText = feedbackText.substring(0, correctionIndex).trim();
+        correctedText = feedbackBody.substring(correctionIndex + "التصحيح:".length).trim();
+        feedbackBody = feedbackBody.substring(0, correctionIndex).trim();
       }
 
-      setFeedback({ isCorrect, feedback: feedbackText, correctedText });
+      setFeedback({ isCorrect, feedback: feedbackBody, correctedText });
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      console.error("Recitation room error:", errorMessage);
+      console.error("Recitation room error:", error);
       setFeedback({
         isCorrect: false,
-        feedback: errorMessage
+        feedback: "عذراً، واجهنا مشكلة في تحليل التلاوة. يرجى المحاولة مرة أخرى."
       });
     } finally {
+      setLoading(false);
       setTranscribedText('');
       finalTranscriptRef.current = '';
     }
@@ -159,7 +186,7 @@ const RecitationRoom: React.FC = () => {
             <div className="absolute inset-0 rounded-full border-2 border-emerald-500/10 animate-ping"></div>
           </div>
           <h2 className="text-5xl font-black text-slate-800">مصحح التلاوة الذكي</h2>
-          <p className="text-slate-500 text-xl font-medium">اقرأ من بداية السورة حتى الآية المحددة، وسيقوم الذكاء الاصطناعي بمساعدتك على تصحيح الأخطاء</p>
+          <p className="text-slate-500 text-xl font-medium">اقرأ من بداية السورة، وسيقوم الذكاء الاصطناعي بمساعدتك على تصحيح الأخطاء</p>
         </header>
 
         <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden">
@@ -193,7 +220,7 @@ const RecitationRoom: React.FC = () => {
           {!isBrowserSupported && (
             <div className="p-8 bg-red-50 text-red-700 flex items-center gap-4">
               <AlertCircle size={24} />
-              <p className="font-bold">عذراً، متصفحك لا يدعم تقنية التعرف على الصوت. يرجى استخدام متصفح حديث مثل Google Chrome.</p>
+              <p className="font-bold">عذراً، متصفحك لا يدعم تقنية التعرف على الصوت. يرجى استخدام متصفح Google Chrome للحصول على أفضل تجربة.</p>
             </div>
           )}
 
@@ -204,9 +231,9 @@ const RecitationRoom: React.FC = () => {
               }`}>
                 <button
                   onClick={handleToggleRecording}
-                  disabled={!isBrowserSupported}
+                  disabled={!isBrowserSupported || loading}
                   className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    isRecording ? 'bg-red-500' : 'bg-quiet-green'
+                    isRecording ? 'bg-red-500 animate-pulse' : 'bg-quiet-green'
                   }`}
                 >
                   {isRecording ? <Square size={40} className="text-white" /> : <Mic size={44} className="text-white" />}
@@ -215,39 +242,45 @@ const RecitationRoom: React.FC = () => {
               {isRecording && <div className="absolute -inset-4 rounded-full border-2 border-quiet-green/30 animate-ping"></div>}
             </div>
             
-            <p className="text-sm font-bold text-slate-400">
-              {isRecording ? "اضغط للإيقاف والتحقق" : "اضغط لبدء التسجيل"}
+            <p className="text-sm font-black text-slate-400">
+              {isRecording ? "اضغط للإيقاف والتحقق" : "اضغط لبدء التلاوة"}
             </p>
 
-            {recognitionError && !isRecording && (
-                <div className="flex justify-center items-center gap-3 text-amber-600 bg-amber-50 px-6 py-4 rounded-2xl border border-amber-200 animate-in fade-in duration-300">
+            {recognitionError && (
+                <div className="flex justify-center items-center gap-3 text-red-600 bg-red-50 px-6 py-4 rounded-2xl border border-red-100 animate-in fade-in duration-300">
                     <AlertCircle size={20} />
                     <span className="font-bold">{recognitionError}</span>
                 </div>
             )}
 
-            <div className="w-full bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-[150px] flex items-center justify-center text-center">
-              {isRecording && <Waves size={32} className="text-quiet-green/40 animate-pulse mr-4" />}
+            <div className="w-full bg-slate-50 rounded-2xl p-6 border border-slate-100 min-h-[150px] flex items-center justify-center text-center relative">
+              {isRecording && (
+                <div className="absolute top-4 right-4 flex gap-1">
+                   <div className="w-1.5 h-4 bg-quiet-green animate-bounce delay-75"></div>
+                   <div className="w-1.5 h-6 bg-quiet-green animate-bounce delay-150"></div>
+                   <div className="w-1.5 h-4 bg-quiet-green animate-bounce delay-300"></div>
+                </div>
+              )}
               <p className="quran-font text-2xl md:text-3xl text-slate-700 leading-relaxed">
-                {transcribedText || "سيظهر النص الذي تتلوه هنا..."}
+                {transcribedText || "سيظهر نص تلاوتك هنا تلقائياً..."}
               </p>
             </div>
 
             {loading && (
-              <div className="flex justify-center items-center gap-3 text-quiet-green font-bold">
-                <Loader2 className="animate-spin" />
-                <span>جاري التحليل...</span>
+              <div className="flex flex-col items-center gap-4 text-quiet-green font-bold">
+                <Loader2 className="animate-spin" size={32} />
+                <span className="animate-pulse">جاري تحليل مخارج الحروف والكلمات...</span>
               </div>
             )}
           </div>
 
           {feedback && (
-            <div className={`p-8 md:p-12 border-t-4 transition-all duration-500 animate-in fade-in ${
+            <div className={`p-8 md:p-12 border-t-8 transition-all duration-500 animate-in slide-in-from-bottom ${
               feedback.isCorrect === null ? 'bg-slate-50/50 border-slate-200' :
               feedback.isCorrect ? 'bg-emerald-50/50 border-emerald-500' : 'bg-amber-50/50 border-amber-500'
             }`}>
               <div className="flex items-start gap-5">
-                <div className={`mt-1 p-3 rounded-full transition-colors ${
+                <div className={`mt-1 p-3 rounded-2xl transition-colors ${
                   feedback.isCorrect === null ? 'bg-slate-100 text-slate-500' :
                   feedback.isCorrect ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
                 }`}>
@@ -260,15 +293,15 @@ const RecitationRoom: React.FC = () => {
                     feedback.isCorrect ? 'text-emerald-900' : 'text-amber-900'
                   }`}>
                     {feedback.isCorrect === null ? 'جاري التحليل...' :
-                     feedback.isCorrect ? 'أحسنت! تلاوتك صحيحة' : 'تحتاج لبعض التركيز'}
+                     feedback.isCorrect ? 'أحسنت! تلاوة مباركة ومتقنة' : 'تم رصد بعض الملاحظات'}
                   </h4>
-                  <p className="text-slate-700 mt-3 text-lg leading-relaxed min-h-[28px]">
-                    {feedback.feedback || '...'}
+                  <p className="text-slate-700 mt-4 text-xl leading-relaxed whitespace-pre-line font-medium">
+                    {feedback.feedback || 'يرجى الانتظار قليلاً...'}
                   </p>
                   {feedback.correctedText && (
-                    <div className="mt-6 p-6 bg-white rounded-2xl border-2 border-white shadow-inner">
-                      <span className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-widest">النص الصحيح</span>
-                      <p className="quran-font text-3xl text-quiet-green">{feedback.correctedText}</p>
+                    <div className="mt-8 p-8 bg-white rounded-3xl border-2 border-white shadow-xl">
+                      <span className="text-xs font-black text-slate-400 block mb-4 uppercase tracking-[0.3em]">التصحيح المعتمد</span>
+                      <p className="quran-font text-4xl text-quiet-green leading-loose">{feedback.correctedText}</p>
                     </div>
                   )}
                 </div>

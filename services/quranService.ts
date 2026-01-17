@@ -1,3 +1,4 @@
+
 import { getCachedSurahAyahs, cacheSurahAyahs, getCachedJuz, cacheJuz } from "./firebaseService";
 
 export async function fetchSurahAyahs(surahNumber: number) {
@@ -7,7 +8,8 @@ export async function fetchSurahAyahs(surahNumber: number) {
     if (cached) return cached;
 
     // 2. Fetch from external API if not cached
-    const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`);
+    // Use quran-uthmani edition to ensure 'page', 'juz', etc. are included in the response
+    const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/quran-uthmani`);
     if (!response.ok) {
         throw new Error(`API call failed with status: ${response.status}`);
     }

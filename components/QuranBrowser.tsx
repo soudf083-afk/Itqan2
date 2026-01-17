@@ -73,6 +73,8 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({
     const data = await fetchSurahAyahs(surah.number);
     if (data && data.ayahs) {
       setAyahs(data.ayahs);
+      // Update with full surah data (including ayahs and page info)
+      setSelectedSurah(data);
     } else {
       setFetchError('عذراً، حدث خطأ أثناء تحميل بيانات السورة. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.');
     }
@@ -126,9 +128,15 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({
 
   const cleanAyahText = (text: any) => {
     const textStr = String(text || '');
-    const bismillah = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
-    if (textStr.startsWith(bismillah)) {
-      return textStr.substring(bismillah.length).trim();
+    // Some API responses include bismillah, we strip it if it exists to avoid duplication in display
+    const bismillahNormalized = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+    const bismillahSimple = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+    
+    if (textStr.startsWith(bismillahNormalized)) {
+      return textStr.substring(bismillahNormalized.length).trim();
+    }
+    if (textStr.startsWith(bismillahSimple)) {
+      return textStr.substring(bismillahSimple.length).trim();
     }
     return textStr;
   };

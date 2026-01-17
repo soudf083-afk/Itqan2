@@ -23,7 +23,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
       setClickCount(0);
       alert(newRole === 'admin' ? "تم تفعيل وضع المسؤول بنجاح" : "تم العودة لوضع المستخدم");
     }
-    // Reset counter after 3 seconds of inactivity
     setTimeout(() => setClickCount(0), 3000);
   };
 
@@ -42,9 +41,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
   const visibleNavItems = navItems.filter(item => !item.adminOnly || userProgress.role === 'admin');
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row theme-bg overflow-hidden">
+    <div className="h-screen flex flex-col md:flex-row theme-bg overflow-hidden relative">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 theme-card border-l p-8 z-20 shadow-[20px_0_60px_rgba(0,0,0,0.02)]">
+      <aside className="hidden md:flex flex-col w-72 theme-card border-l p-8 z-20 shadow-[20px_0_60px_rgba(0,0,0,0.02)] h-full">
         <div 
           onClick={handleLogoClick}
           className="flex flex-col items-center text-center gap-4 mb-16 cursor-pointer select-none group active:scale-95 transition-transform"
@@ -97,14 +96,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto pb-24 md:pb-0 relative islamic-pattern">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 h-full overflow-y-auto pb-32 md:pb-0 relative islamic-pattern custom-scrollbar">
+        <div className="max-w-7xl mx-auto w-full">
           {children}
         </div>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 theme-card backdrop-blur-2xl border px-4 py-3 flex justify-around items-center z-30 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem]">
+      <nav className="md:hidden fixed bottom-6 left-6 right-6 theme-card backdrop-blur-2xl border px-4 py-3 flex justify-around items-center z-40 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem]">
         {visibleNavItems.filter(item => item.id !== 'admin').slice(0, 5).map((item) => ( 
           <button
             key={item.id}
