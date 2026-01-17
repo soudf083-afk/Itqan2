@@ -21,14 +21,25 @@ export interface Surah {
   revelationType: string;
 }
 
+export interface Bookmark {
+  type: 'surah' | 'juz';
+  number: number;
+  name: string;
+  page?: number;
+}
+
 export interface UserProgress {
   id: string;
+  userName: string;
+  role: 'admin' | 'user';
+  theme: 'green' | 'light' | 'dark';
   currentSurah: number;
   totalAyahsMemorized: number;
   lightPoints: number;
   streak: number;
   level: UserLevel;
   achievements: Achievement[];
+  lastBookmark?: Bookmark;
 }
 
 export interface City {

@@ -1,85 +1,129 @@
 
-import React from 'react';
-import { Home, Trophy, MessageSquare, Book, Users, Heart, User, Settings, Map, Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, Trophy, MessageSquare, Book, Users, Heart, User, Settings, Map, Shield, Lock } from 'lucide-react';
+import { UserProgress } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  userProgress: UserProgress;
+  onUpdateRole: (role: 'admin' | 'user') => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, userProgress, onUpdateRole }) => {
+  const [clickCount, setClickCount] = useState(0);
+
+  const handleLogoClick = () => {
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+    if (newCount === 5) {
+      const newRole = userProgress.role === 'admin' ? 'user' : 'admin';
+      onUpdateRole(newRole);
+      setClickCount(0);
+      alert(newRole === 'admin' ? "تم تفعيل وضع المسؤول بنجاح" : "تم العودة لوضع المستخدم");
+    }
+    // Reset counter after 3 seconds of inactivity
+    setTimeout(() => setClickCount(0), 3000);
+  };
+
   const navItems = [
-    { id: 'dashboard', icon: Home, label: 'الرئيسية' },
-    { id: 'journey', icon: Map, label: 'رحلة الحافظ' },
-    { id: 'library', icon: Book, label: 'المصحف' },
-    { id: 'competitions', icon: Trophy, label: 'المسابقات' },
-    { id: 'recite', icon: MessageSquare, label: 'التصحيح' },
-    { id: 'reciters', icon: Users, label: 'المقرئون' },
-    { id: 'azkar', icon: Heart, label: 'الأذكار' },
-    { id: 'profile', icon: User, label: 'حسابي' },
-    { id: 'admin', icon: Shield, label: 'لوحة التحكم' },
+    { id: 'dashboard', icon: Home, label: 'الرئيسية', adminOnly: false },
+    { id: 'journey', icon: Map, label: 'رحلة الحافظ', adminOnly: false },
+    { id: 'library', icon: Book, label: 'المصحف', adminOnly: false },
+    { id: 'competitions', icon: Trophy, label: 'المسابقات', adminOnly: false },
+    { id: 'recite', icon: MessageSquare, label: 'التصحيح', adminOnly: false },
+    { id: 'reciters', icon: Users, label: 'المقرئون', adminOnly: false },
+    { id: 'azkar', icon: Heart, label: 'الأذكار', adminOnly: false },
+    { id: 'profile', icon: User, label: 'حسابي', adminOnly: false },
+    { id: 'admin', icon: Shield, label: 'لوحة التحكم', adminOnly: true },
   ];
 
+  const visibleNavItems = navItems.filter(item => !item.adminOnly || userProgress.role === 'admin');
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#fdfcf9] overflow-hidden">
+    <div className="min-h-screen flex flex-col md:flex-row theme-bg overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-l border-slate-100 p-6 z-20 shadow-xl shadow-slate-200/50">
-        <div className="flex items-center gap-3 mb-12">
-          <div className="w-12 h-12 bg-quiet-green rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-900/10 border-b-4 border-soft-gold">
-            <span className="text-white font-bold text-2xl quran-font">إ</span>
+      <aside className="hidden md:flex flex-col w-72 theme-card border-l p-8 z-20 shadow-[20px_0_60px_rgba(0,0,0,0.02)]">
+        <div 
+          onClick={handleLogoClick}
+          className="flex flex-col items-center text-center gap-4 mb-16 cursor-pointer select-none group active:scale-95 transition-transform"
+        >
+          <div className="relative">
+            <div className="px-6 py-4 itqan-logo-seal rounded-[1.8rem] flex items-center justify-center border-2 border-soft-gold/30 shadow-lg">
+              <span className="text-white font-bold text-2xl quran-font leading-none">إتقان</span>
+            </div>
+            {userProgress.role === 'admin' && (
+              <div className="absolute -top-1 -right-1 w-6 h-6 bg-soft-gold rounded-full flex items-center justify-center text-white border-2 border-white shadow-lg">
+                <Shield size={10} />
+              </div>
+            )}
           </div>
           <div className="flex flex-col">
-            <h1 className="text-2xl font-black text-quiet-green leading-none">إتقان</h1>
-            <span className="text-[10px] font-bold text-soft-gold tracking-widest uppercase mt-1">itqan platform</span>
+            <h1 className="text-4xl font-black text-quiet-green leading-none tracking-tight">إتقان</h1>
+            <span className="text-[10px] font-black text-soft-gold tracking-[0.3em] uppercase mt-2">The Golden Path</span>
           </div>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 ${
+              className={`w-full flex items-center gap-4 px-6 py-5 rounded-[1.8rem] transition-all duration-400 ${
                 activeTab === item.id
-                  ? 'bg-emerald-50/50 text-quiet-green font-black shadow-sm border-r-4 border-soft-gold'
-                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                  ? 'bg-soft-gold/10 text-quiet-green font-black shadow-[0_10px_20px_rgba(217,119,6,0.05)] border-r-4 border-soft-gold'
+                  : 'theme-text-muted hover:bg-slate-50 hover:theme-text'
               }`}
             >
-              <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-              <span className="text-sm">{item.label}</span>
+              <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+              <span className="text-sm font-bold">{item.label}</span>
+              {item.adminOnly && <Lock size={14} className="mr-auto text-soft-gold/30" />}
             </button>
           ))}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-slate-50">
-          <button className="w-full flex items-center gap-4 px-5 py-4 text-slate-400 hover:bg-slate-50 rounded-2xl transition-all">
-            <Settings size={20} />
-            <span className="text-sm">الإعدادات</span>
+        <div className="mt-auto pt-8 border-t theme-border">
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center gap-4 px-6 py-5 rounded-[1.8rem] transition-all duration-300 ${
+              activeTab === 'settings' ? 'bg-quiet-green text-white font-black shadow-xl' : 'theme-text-muted hover:bg-slate-50'
+            }`}
+          >
+            <Settings size={22} />
+            <span className="text-sm font-bold">الإعدادات</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-y-auto pb-24 md:pb-0 relative">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 h-full overflow-y-auto pb-24 md:pb-0 relative islamic-pattern">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-6 left-6 right-6 bg-white/95 backdrop-blur-xl border border-slate-100 px-4 py-3 flex justify-around items-center z-30 shadow-[0_20px_40px_rgba(0,0,0,0.1)] rounded-[2.5rem]">
-        {navItems.filter(item => item.id !== 'admin').slice(0, 5).map((item) => ( // Show first 5 items on mobile, excluding admin
+      <nav className="md:hidden fixed bottom-6 left-6 right-6 theme-card backdrop-blur-2xl border px-4 py-3 flex justify-around items-center z-30 shadow-[0_25px_50px_rgba(0,0,0,0.15)] rounded-[2.5rem]">
+        {visibleNavItems.filter(item => item.id !== 'admin').slice(0, 5).map((item) => ( 
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center gap-1 min-w-[50px] transition-all ${
-              activeTab === item.id ? 'text-quiet-green scale-110' : 'text-slate-300'
+            className={`flex flex-col items-center gap-1 min-w-[50px] transition-all p-2 rounded-2xl ${
+              activeTab === item.id ? 'text-quiet-green scale-125 bg-soft-gold/5 shadow-inner' : 'theme-text-muted'
             }`}
           >
-            <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+            <item.icon size={24} strokeWidth={activeTab === item.id ? 2.5 : 2} />
           </button>
         ))}
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center gap-1 min-w-[50px] transition-all p-2 rounded-2xl ${
+            activeTab === 'settings' ? 'text-quiet-green scale-125 bg-soft-gold/5 shadow-inner' : 'theme-text-muted'
+          }`}
+        >
+          <Settings size={24} />
+        </button>
       </nav>
     </div>
   );

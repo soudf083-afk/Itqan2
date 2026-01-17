@@ -1,14 +1,16 @@
 
 import React, { useState } from 'react';
 import { Shield, Users, Edit, Save, User } from 'lucide-react';
+import { UserProgress } from '../types';
 
 interface AdminPanelProps {
   reciters: any[];
   setReciters: React.Dispatch<React.SetStateAction<any[]>>;
+  userProgress: UserProgress;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ reciters, setReciters }) => {
-  const [welcomeTitle, setWelcomeTitle] = useState("سعود فهد،<br/><span class=\"text-soft-gold\">نور قلبك</span> يزداد إشراقاً");
+const AdminPanel: React.FC<AdminPanelProps> = ({ reciters, setReciters, userProgress }) => {
+  const [welcomeTitle, setWelcomeTitle] = useState(`${userProgress.userName}،<br/><span class="text-soft-gold">نور قلبك</span> يزداد إشراقاً`);
   const [motivationMessage, setMotivationMessage] = useState("خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ");
   
   return (

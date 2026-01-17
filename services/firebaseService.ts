@@ -1,3 +1,4 @@
+
 import { UserProgress, UserLevel } from '../types';
 import { INITIAL_ACHIEVEMENTS } from '../components/constants';
 
@@ -14,6 +15,9 @@ const STORAGE_KEYS = {
 };
 
 const initialUserProgress: Omit<UserProgress, 'id'> = {
+    userName: '',
+    role: 'user',
+    theme: 'green',
     currentSurah: 1,
     totalAyahsMemorized: 0,
     lightPoints: 0,
@@ -62,31 +66,50 @@ export async function syncSurahMetadata() {
     return Promise.resolve();
 }
 
+// Fix: Implement missing caching methods needed by quranService.ts
+
 /**
- * Caching mechanisms using LocalStorage
+ * Retrieves cached surah ayahs from local storage
  */
 export async function getCachedSurahAyahs(surahNumber: number) {
     try {
-        const stored = localStorage.getItem(`${STORAGE_KEYS.AYAHS_CACHE}${surahNumber}`);
+        const stored = localStorage.getItem(STORAGE_KEYS.AYAHS_CACHE + surahNumber);
         return stored ? JSON.parse(stored) : null;
-    } catch (e) { return null; }
+    } catch (error) {
+        return null;
+    }
 }
 
+/**
+ * Caches surah ayahs in local storage
+ */
 export async function cacheSurahAyahs(surahNumber: number, data: any) {
     try {
-        localStorage.setItem(`${STORAGE_KEYS.AYAHS_CACHE}${surahNumber}`, JSON.stringify(data));
-    } catch (e) { console.error("Cache failed", e); }
+        localStorage.setItem(STORAGE_KEYS.AYAHS_CACHE + surahNumber, JSON.stringify(data));
+    } catch (error) {
+        console.error("[Itqan] Cache storage failed:", error);
+    }
 }
 
+/**
+ * Retrieves cached juz from local storage
+ */
 export async function getCachedJuz(juzNumber: number) {
     try {
-        const stored = localStorage.getItem(`${STORAGE_KEYS.JUZ_CACHE}${juzNumber}`);
+        const stored = localStorage.getItem(STORAGE_KEYS.JUZ_CACHE + juzNumber);
         return stored ? JSON.parse(stored) : null;
-    } catch (e) { return null; }
+    } catch (error) {
+        return null;
+    }
 }
 
+/**
+ * Caches juz in local storage
+ */
 export async function cacheJuz(juzNumber: number, data: any) {
     try {
-        localStorage.setItem(`${STORAGE_KEYS.JUZ_CACHE}${juzNumber}`, JSON.stringify(data));
-    } catch (e) { console.error("Cache failed", e); }
+        localStorage.setItem(STORAGE_KEYS.JUZ_CACHE + juzNumber, JSON.stringify(data));
+    } catch (error) {
+        console.error("[Itqan] Cache storage failed:", error);
+    }
 }

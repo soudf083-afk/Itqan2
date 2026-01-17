@@ -1,16 +1,30 @@
+
 // Explicitly import React to resolve UMD global errors
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { SURAHS } from './constants';
-import { BookOpen, Hash, Search, ArrowRight, Loader2, Book, List, AlignRight, Headphones, X, Volume2, AlertCircle, RefreshCw, Play, Pause } from 'lucide-react';
+import { BookOpen, Search, ArrowRight, Loader2, Book, List, AlignRight, Headphones, X, Volume2, AlertCircle, RefreshCw, Play, Pause, Bookmark as BookmarkIcon, Check } from 'lucide-react';
 import { fetchSurahAyahs, fetchJuz } from '../services/quranService';
+import { UserProgress, Bookmark } from '../types';
 
 interface QuranBrowserProps {
   reciters: any[];
   initialJuz: number | null;
+  initialSurah: number | null;
   clearInitialJuz: () => void;
+  clearInitialSurah: () => void;
+  userProgress: UserProgress;
+  onUpdateProgress: (data: Partial<UserProgress>) => void;
 }
 
-const QuranBrowser: React.FC<QuranBrowserProps> = ({ reciters, initialJuz, clearInitialJuz }) => {
+const QuranBrowser: React.FC<QuranBrowserProps> = ({ 
+  reciters, 
+  initialJuz, 
+  initialSurah,
+  clearInitialJuz, 
+  clearInitialSurah,
+  userProgress,
+  onUpdateProgress
+}) => {
   const [view, setView] = useState<'surah' | 'juz'>('surah');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSurah, setSelectedSurah] = useState<any>(null);
@@ -27,6 +41,8 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({ reciters, initialJuz, clear
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [bookmarkSaved, setBookmarkSaved] = useState(false);
 
   const filteredSurahs = SURAHS.filter(s => {
     const sName = String(s.name || '');
@@ -84,7 +100,13 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({ reciters, initialJuz, clear
       handleJuzClick(initialJuz);
       clearInitialJuz();
     }
-  }, [initialJuz]);
+    if (initialSurah) {
+      setView('surah');
+      const s = SURAHS.find(s => s.number === initialSurah);
+      if (s) handleSurahClick(s);
+      clearInitialSurah();
+    }
+  }, [initialJuz, initialSurah]);
 
   const pages: [string, any[]][] = useMemo(() => {
     const currentAyahs: any[] = (selectedSurah?.ayahs || selectedJuz?.ayahs || ayahs || []);
@@ -175,6 +197,27 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({ reciters, initialJuz, clear
     }
   };
 
+  const handleSetBookmark = () => {
+    let bookmark: Bookmark;
+    if (selectedSurah) {
+      bookmark = {
+        type: 'surah',
+        number: selectedSurah.number,
+        name: selectedSurah.name
+      };
+    } else if (selectedJuz) {
+      bookmark = {
+        type: 'juz',
+        number: selectedJuz.number,
+        name: `الجزء ${selectedJuz.number}`
+      };
+    } else return;
+
+    onUpdateProgress({ lastBookmark: bookmark });
+    setBookmarkSaved(true);
+    setTimeout(() => setBookmarkSaved(false), 2000);
+  };
+
   useEffect(() => { return () => { if (audioRef.current) audioRef.current.pause(); }; }, []);
 
   if (selectedSurah || selectedJuz) {
@@ -193,7 +236,20 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({ reciters, initialJuz, clear
             <ArrowRight size={22} className="group-hover:-translate-x-2 transition-transform" />
             العودة للمصحف
           </button>
+          
           <div className="flex gap-4">
+            <button 
+              onClick={handleSetBookmark}
+              className={`flex items-center gap-3 px-8 py-4 rounded-[2rem] font-black shadow-lg transition-all ${
+                bookmarkSaved 
+                ? 'bg-emerald-500 text-white' 
+                : 'bg-white text-soft-gold border-2 border-soft-gold/20 hover:border-soft-gold'
+              }`}
+            >
+              {bookmarkSaved ? <Check size={20} /> : <BookmarkIcon size={20} />}
+              {bookmarkSaved ? 'تم الحفظ' : 'ضع الفاصلة'}
+            </button>
+
             {selectedSurah && (
               <button onClick={() => { setShowReciterPicker(true); setReciterSearchQuery(''); }} className="flex items-center gap-3 bg-soft-gold text-white px-8 py-4 rounded-[2rem] font-black shadow-lg shadow-amber-900/10 hover:scale-105 transition-all">
                 <Headphones size={20} />
@@ -350,7 +406,14 @@ const QuranBrowser: React.FC<QuranBrowserProps> = ({ reciters, initialJuz, clear
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-10 pb-40">
           {Array.from({ length: 30 }).map((_, i) => (
-            <button key={i} onClick={() => handleJuzClick(i+1)} className="group bg-white aspect-square rounded-[4rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-8 hover:border-soft-gold hover:shadow-2xl hover:-translate-y-4 transition-all duration-700 cursor-pointer relative overflow-hidden"><div className="w-28 h-28 bg-[#fcfaf7] rounded-[2.5rem] flex items-center justify-center text-quiet-green group-hover:scale-110 group-hover:bg-quiet-green group-hover:text-white transition-all duration-500 shadow-inner border-b-4 border-slate-100 group-hover:border-soft-gold"><Hash size={56} strokeWidth={2.5} /></div><div className="text-center space-y-2"><span className="text-4xl font-black text-slate-800 group-hover:text-quiet-green transition-colors">الجزء {i + 1}</span></div></button>
+            <button key={i} onClick={() => handleJuzClick(i+1)} className="group bg-white aspect-square rounded-[4rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-8 hover:border-soft-gold hover:shadow-2xl hover:-translate-y-4 transition-all duration-700 cursor-pointer relative overflow-hidden">
+              <div className="w-28 h-28 bg-[#fcfaf7] rounded-[2.5rem] flex items-center justify-center text-quiet-green group-hover:scale-110 group-hover:bg-quiet-green group-hover:text-white transition-all duration-500 shadow-inner border-b-4 border-slate-100 group-hover:border-soft-gold">
+                <span className="text-5xl font-black">{i + 1}</span>
+              </div>
+              <div className="text-center space-y-2">
+                <span className="text-4xl font-black text-slate-800 group-hover:text-quiet-green transition-colors">الجزء {i + 1}</span>
+              </div>
+            </button>
           ))}
         </div>
       )}

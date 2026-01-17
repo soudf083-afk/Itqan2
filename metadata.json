@@ -2,6 +2,7 @@
   "name": "Itqan2",
   "description": "منصة 'إتقان' التفاعلية لحفظ وتجويد القرآن الكريم، تجمع بين هدوء التصميم ودقة التقنية.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }
