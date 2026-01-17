@@ -12,7 +12,7 @@ import AdminPanel from './components/AdminPanel';
 import Settings from './components/Settings';
 import { RECITERS } from './components/constants';
 import { UserProgress, Bookmark } from './types';
-import { Loader2, Sparkles, ArrowLeft, Heart, BookOpen, Star, UserCircle2, MoonStar, Lock, Award, ShieldCheck, PenTool, Gem, Compass } from 'lucide-react';
+import { Loader2, Sparkles, ArrowLeft, UserCircle, Lock, ShieldCheck, PenTool, Star, Compass } from 'lucide-react';
 import { getUserProgress, updateUserProgress, syncSurahMetadata } from './services/firebaseService';
 import { getPersonalizedWelcome } from './services/geminiService';
 
@@ -26,7 +26,6 @@ const App: React.FC = () => {
   const [loadingUser, setLoadingUser] = useState(true);
   const [tempName, setTempName] = useState('');
   
-  // Welcome Overlay States
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false);
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [loadingWelcome, setLoadingWelcome] = useState(false);
@@ -41,8 +40,7 @@ const App: React.FC = () => {
         const progress = await getUserProgress(userId);
         setUserProgress(progress);
         
-        // Initialize theme on load
-        if (progress.theme && progress.theme !== 'green') {
+        if (progress && progress.theme && progress.theme !== 'green') {
           document.body.setAttribute('data-theme', progress.theme);
         }
 
@@ -52,7 +50,6 @@ const App: React.FC = () => {
       } catch (error) {
         console.error("Failed to fetch or create user progress:", error);
       } finally {
-        // Add a slight delay for a smoother transition
         setTimeout(() => setLoadingUser(false), 800);
       }
     };
@@ -108,15 +105,12 @@ const App: React.FC = () => {
     setActiveTab('library');
   };
 
-  // Name Entry View (Premium Full Screen)
   const renderNameEntry = () => (
     <div className="min-h-screen theme-bg flex flex-col items-center justify-center p-4 relative overflow-hidden islamic-pattern">
-      {/* Dynamic Background Accents */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-soft-gold/5 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-quiet-green/5 rounded-full blur-[120px] animate-pulse"></div>
       
       <div className="max-w-4xl w-full relative z-10 space-y-16 animate-in">
-        {/* Main Branding Section */}
         <div className="text-center space-y-8">
           <div className="relative inline-block group">
             <div className="absolute -inset-1 bg-gradient-to-r from-soft-gold to-emerald-500 rounded-[3.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
@@ -135,9 +129,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Name Input Card - Premium Design */}
         <div className="theme-card glass-effect rounded-[4.5rem] border shadow-[0_60px_120px_-20px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col md:flex-row items-stretch backdrop-blur-3xl border-white/40">
-           {/* Left Column: Philosophical Info */}
            <div className="md:w-5/12 bg-quiet-green/5 p-12 md:p-16 border-b md:border-b-0 md:border-l theme-border flex flex-col justify-between space-y-12">
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-3 bg-white text-soft-gold px-6 py-2.5 rounded-full text-sm font-black shadow-sm border border-soft-gold/10">
@@ -152,7 +144,7 @@ const App: React.FC = () => {
               <div className="space-y-8">
                 <div className="flex gap-6 items-start group">
                   <div className="w-14 h-14 bg-white rounded-[1.2rem] flex items-center justify-center text-soft-gold shadow-md shrink-0 border border-slate-100 group-hover:rotate-12 transition-transform">
-                    <Gem size={24} />
+                    <Star size={24} />
                   </div>
                   <div>
                     <h4 className="font-bold theme-text text-lg">مقام الإتقان</h4>
@@ -171,11 +163,10 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* Right Column: Interactive Entry */}
            <div className="md:w-7/12 p-12 md:p-20 flex flex-col justify-center items-center text-center space-y-12 relative">
               <div className="space-y-4">
                 <div className="w-24 h-24 bg-emerald-50 text-quiet-green rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-quiet-green/20 animate-float shadow-inner">
-                  <UserCircle2 size={48} strokeWidth={1.5} />
+                  <UserCircle size={48} strokeWidth={1.5} />
                 </div>
                 <h4 className="text-3xl font-black theme-text">كيف نحب أن نناديك؟</h4>
                 <p className="text-sm theme-text-muted font-bold">الاسم الذي ستفخر به في لوحات الشرف</p>
@@ -280,7 +271,6 @@ const App: React.FC = () => {
     );
   }
 
-  // If no username is set, render entry screen directly without Layout (no sidebar)
   if (userProgress && !userProgress.userName) {
     return renderNameEntry();
   }

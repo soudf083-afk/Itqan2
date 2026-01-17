@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
       :root {
-        /* Royal Green Theme - Primary */
         --quiet-green: #064e3b;
         --soft-gold: #d97706;
         --bg-app: #f8fafc;
@@ -52,7 +51,6 @@
         font-family: 'Amiri', serif;
       }
 
-      /* Logo & Branding */
       .itqan-logo-seal {
         background: var(--quiet-green);
         border: 4px solid var(--soft-gold);
@@ -74,7 +72,6 @@
         font-weight: 900;
       }
 
-      /* Dynamic Theme Classes */
       .bg-quiet-green { background-color: var(--quiet-green) !important; }
       .text-quiet-green { color: var(--quiet-green) !important; }
       .border-quiet-green { border-color: var(--quiet-green) !important; }
@@ -139,27 +136,25 @@
         border: 1px solid rgba(255, 255, 255, 0.3);
       }
     </style>
-    <script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "recharts": "https://esm.sh/recharts@2.15.0?external=react,react-dom",
-    "@google/genai": "https://esm.sh/@google/genai@0.3.1",
-    "lucide-react": "https://esm.sh/lucide-react@0.474.0?external=react,react-dom",
-    "@/": "./",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "path": "https://esm.sh/path@^0.12.7",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "react": "https://esm.sh/react@^19.2.3",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "url": "https://esm.sh/url@^0.11.4",
+    "path": "https://esm.sh/path@^0.12.7"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>
